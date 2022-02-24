@@ -1,8 +1,11 @@
 numpy
 sentence-transformers
 matplotlib
-ftfy regex tqdm
+ftfy 
+regex 
+tqdm
 git+https://github.com/openai/CLIP.git
 torch
-clip
 matplotlib
+jupyterlab
+ipywidgets
