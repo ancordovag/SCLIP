@@ -9,3 +9,5 @@ torch
 matplotlib
 jupyterlab
 ipywidgets
+pandas
+pyyaml

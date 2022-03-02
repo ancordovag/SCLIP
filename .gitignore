@@ -1,5 +1,6 @@
-venv/
-europarl/
-.idea/
-__pycache__/
-.ipynb_checkpoints/
+venv/*
+europarl/*
+.idea/*
+__pycache__/*
+.ipynb_checkpoints/*
+config.yml
