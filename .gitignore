@@ -1,4 +1,5 @@
 venv/*
+coco/*
 europarl/*
 .idea/*
 __pycache__/*
