@@ -11,9 +11,9 @@ import torch.nn.functional as F
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 class SCLIPNN(nn.Module):
-    def __init__(self, hidden_size):
+    def __init__(self, input_size, hidden_size):
         super(SCLIPNN, self).__init__()
-        self.input_size = 384
+        self.input_size = input_size
         self.hidden_size = hidden_size
         self.linear1 = nn.Linear(self.input_size,self.hidden_size)
         self.linear2 = nn.Linear(self.hidden_size,512)
