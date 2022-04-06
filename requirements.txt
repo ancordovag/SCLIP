@@ -12,3 +12,4 @@ ipywidgets
 pandas
 pyyaml
 Pillow
+googletrans==3.1.0a0
