@@ -13,9 +13,9 @@ english_filename = dirname + '/' + english_dir
 train_file = open(dirname + 'train_sentences.txt',mode='w',encoding='utf-8')
 test_file = open(dirname + 'test_sentences.txt',mode='w',encoding='utf-8')
 valid_file = open(dirname + 'valid_sentences.txt',mode='w',encoding='utf-8')
-max_training_lines = params["max_training_lines"]
-max_testing_lines = params["max_testing_lines"]
-max_validation_lines = params["max_validation_lines"]
+max_training_lines = params["max_train_lines"]
+max_testing_lines = params["max_test_lines"]
+max_validation_lines = params["max_valid_lines"]
 max_sentence_length = params["max_sentence_length"]
 
 lines_counter = 0
