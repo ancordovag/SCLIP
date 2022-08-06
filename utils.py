@@ -20,11 +20,7 @@ class EmbeddingsDataset(Dataset):
 def get_models_to_train(input_size):
     device = "cuda" if torch.cuda.is_available() else "cpu"
     print("Creating Models to train...")
-    NN_700 = SCLIPNN(input_size, 700).to(device)
-    NN_800 = SCLIPNN(input_size, 800).to(device)
-    NN3_700 = SCLIPNN3(input_size, 700).to(device)
-    NN3_800 = SCLIPNN3(input_size, 800).to(device)
-    models = {'NN_700':NN_700, 'NN3_700':NN3_700,
-              'NN_800':NN_800, 'NN3_800':NN3_800}
+    NN_900 = SCLIPNN(input_size, 900).to(device)
+    models = {'NN_900':NN_900}
     print(f'{len(models)} models created.')
     return models
