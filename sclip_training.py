@@ -18,8 +18,8 @@ from networks import SCLIPNN, SCLIPNN3
 from utils import EmbeddingsDataset, get_models_to_train
 import logging
 from datetime import datetime
+from experiment import get_MRR, get_image_and_captions_clip_features
 
-writer = SummaryWriter()
 logger = logging.getLogger(__name__)
 fhandler = logging.FileHandler(filename='trained_models.log', mode='a')
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -140,6 +140,13 @@ def show_plot(models,model_train_losses,model_valid_losses,plot_name):
     plt.show()
     
 def train(model, train_dataset, valid_dataset, b_size=32, epochs=200, print_every=params["print_every"]):
+    pairs_directory = cfg["dataset"]["dirname"]
+    image_directory = cfg["dataset"]["images"]
+    #languages = cfg["languages"]
+    languages = {"English": "en", "Spanish": "es"}
+    images_features, clip_features, captions = get_image_and_captions_clip_features(languages, image_directory,clip_model, preprocess)
+    
+    writer = SummaryWriter()
     criterion = nn.MSELoss()
     optimizer = optim.SGD(model.parameters(), lr=0.001, momentum=0.9)    
     train_losses = []
@@ -162,13 +169,21 @@ def train(model, train_dataset, valid_dataset, b_size=32, epochs=200, print_ever
             train_counter += 1
         train_avg_loss = train_loss/train_counter
         train_losses.append(train_avg_loss)
+        writer.add_scalar("Loss/Train", train_avg_loss, epoch)
+        writer.flush()
         
         valid_loss = 0.0
         model.eval()
         valid_counter = 0
-        #TODO:
-        #for i, l in test_loader:
-        #    MRR(languages)
+        sbert_per, clip_per, sbert_MRR, clip_MRR, sbert_er, clip_er = get_MRR(model,pairs_directory,languages,sbert_model,captions, images_features,clip_features)
+        for i, (lang, code)  in enumerate(languages.items()):
+            writer.add_scalar(lang+"/Performance/SBERT", sbert_per[i], epoch)
+            #writer.add_scalar(lang+"/Performance/CLIP", clip_per[i], epoch)
+            writer.add_scalar(lang+"/MRR/SBERT", sbert_MRR[i], epoch)
+            #writer.add_scalar(lang+"/MRR/CLIP", clip_MRR[i], epoch)
+            writer.add_scalar(lang+"/Error/SBERT", sbert_er[i], epoch)
+            #writer.add_scalar(lang+"/Error/CLIP", clip_er[i], epoch)
+            
         for inputs, labels in valid_loader:
             inputs = inputs.to(device)
             labels = labels.to(device)
@@ -181,9 +196,10 @@ def train(model, train_dataset, valid_dataset, b_size=32, epochs=200, print_ever
         if (epoch % print_every == 0) or (epoch == epochs - 1):
             print("Epoch {}. Train Loss: {}. Valid Loss: {}".format(epoch, train_loss/train_counter, valid_loss/valid_counter))
         
-        writer.add_scalar("Train Loss", train_avg_loss, epoch)
-        writer.add_scalar("Valid Loss", valid_avg_loss, epoch)
+        writer.add_scalar("Loss/Valid", valid_avg_loss, epoch)
         writer.flush()
+        
+    writer.close()        
         
     return train_losses, valid_losses
 
@@ -250,7 +266,6 @@ def run_pipeline(directory, n_epochs):### Training Pipeline
     train_results = pd.DataFrame({"TrainLoss":train_final_losses, "ValidLoss":final_loss}, index=model_dict[directory].keys())
     print(train_results)
     show_plot(model_dict[directory],train_losses,valid_losses,directory+'_'+str(n_epochs)+'_'+str(train_size))
-    writer.close()
     
 if __name__ == "__main__":
     run_pipeline(run_pipeline(params["train_dataset"], params["epochs"]))

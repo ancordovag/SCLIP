@@ -393,3 +393,16 @@
 2022-08-05 22:58:14,259 - sclip_training - INFO - Trained model called europarl_NN_900_e250_s5000.pt at 05-08-2022, 22:58:14
 2022-08-05 23:02:07,983 - sclip_training - INFO - Trained model called europarl_NN_900_e250_s5000.pt at 05-08-2022, 23:02:07
 2022-08-05 23:06:54,300 - sclip_training - INFO - Trained model called europarl_NN_900_e250_s10000.pt at 05-08-2022, 23:06:54
+2022-08-06 10:53:49,369 - sclip_training - INFO - Trained model called europarl_NN_900_e250_s5000.pt at 06-08-2022, 10:53:49
+2022-08-06 12:54:54,128 - sclip_training - INFO - Trained model called europarl_NN_900_e250_s2000.pt at 06-08-2022, 12:54:54
+2022-08-06 13:51:31,772 - sclip_training - INFO - Trained model called europarl_NN_900_e250_s2000.pt at 06-08-2022, 13:51:31
+2022-08-06 13:55:43,811 - sclip_training - INFO - Trained model called europarl_NN_900_e250_s4000.pt at 06-08-2022, 13:55:43
+2022-08-06 14:28:11,279 - sclip_training - INFO - Trained model called europarl_NN_900_e250_s50000.pt at 06-08-2022, 14:28:11
+2022-08-08 16:59:51,669 - sclip_training - INFO - Trained model called europarl_NN_900_e250_s10000.pt at 08-08-2022, 16:59:51
+2022-08-08 17:13:19,113 - sclip_training - INFO - Trained model called europarl_NN_900_e250_s20000.pt at 08-08-2022, 17:13:19
+2022-08-08 17:32:13,976 - sclip_training - INFO - Trained model called europarl_NN_900_e250_s30000.pt at 08-08-2022, 17:32:13
+2022-08-08 17:57:16,120 - sclip_training - INFO - Trained model called europarl_NN_900_e250_s40000.pt at 08-08-2022, 17:57:16
+2022-08-08 18:35:49,951 - sclip_training - INFO - Trained model called europarl_NN_900_e250_s60000.pt at 08-08-2022, 18:35:49
+2022-08-08 19:40:55,090 - sclip_training - INFO - Trained model called europarl_NN_900_e250_s70000.pt at 08-08-2022, 19:40:55
+2022-08-08 20:29:02,188 - sclip_training - INFO - Trained model called europarl_NN_900_e250_s80000.pt at 08-08-2022, 20:29:02
+2022-08-08 21:17:41,815 - sclip_training - INFO - Trained model called europarl_NN_900_e250_s90000.pt at 08-08-2022, 21:17:41

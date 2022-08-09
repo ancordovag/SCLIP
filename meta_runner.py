@@ -4,7 +4,7 @@ from sclip_training import run_pipeline
 import sys
 
 directories = ['europarl']
-train_sizes = [x*5000 for x in range(1,3)]
+train_sizes = [90000]
 number_epochs = [250]
 
 for tsz in train_sizes:
