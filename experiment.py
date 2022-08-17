@@ -80,19 +80,7 @@ def get_logits(image_features, text_features):
 
 
 def reciprocal_rank(probs, value):
-    N = len(probs)
-    copy_probs = list(probs.copy())
-    for i in range(N):
-        max_value = max(copy_probs)
-        if max_value == value:
-            return 1/(i + 1)
-        else:
-            copy_probs.remove(max_value)
-    return 1/N
-
-
-def faster_reciprocal_rank(probs, value):
-    return float(1/(1 + np.where(-np.sort(-probs) == value)[0]))
+    return float(1 / (1 + np.where(-np.sort(-probs) == value)[0][0]))
 
 
 def get_images_and_captions(languages):
@@ -168,7 +156,7 @@ def get_MRR(model,directory, languages,sbert_model,captions,images_features, cli
                 if ps < max(probs_sbert[0]):
                     sbert_errors += 1
                 pc = probs_clip[0][counter]
-                clip_rr += reciprocal_rank(probs_clip[0],pc)
+                clip_rr += reciprocal_rank(probs_clip[0], pc)
                 clip_performance.append(pc)
                 if pc < max(probs_clip[0]):
                     clip_errors += 1

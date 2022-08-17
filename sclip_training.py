@@ -131,7 +131,8 @@ def show_plot(models, model_train_losses, model_valid_losses, plot_name):
 
     # fig.legend()
     # fig.title('Losses per Epoch')
-
+    if not os.path.exists("imgs"):  # TODO: this should point to a "result" folder out of the project dir
+        os.makedirs("imgs")
     plt.savefig(os.path.join('imgs', '{}.png'.format(plot_name)))
     plt.show()
 
@@ -220,7 +221,7 @@ def supra_training(models,train_sbert_emb,train_clip_emb,valid_sbert_emb, valid_
         #with open(os.path.join('jsons',name_to_save+'.json'), 'w', encoding='utf-8') as f:
         #    json.dump(data_json, f, ensure_ascii=False, indent=4)
         logger.info(f'Trained model called {name_to_save} at {str_date_time}')
-        if os.path.exists("models"):  # TODO: this should be out of the project folder
+        if not os.path.exists("models"):  # TODO: this should be out of the project folder
             os.makedirs("models")
         torch.save(model.state_dict(), os.path.join('models', name_to_save))
         print('Finished Training from model {}. Elapsed time: {}.'.format(name,elapsed_time))
