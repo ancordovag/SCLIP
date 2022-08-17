@@ -14,10 +14,16 @@ spanish_preprocessing:
   data_dir: "/scratch1/mcipriano/SCLIP/"
   out_dir: "/home/mcipriano/projects/SCLIP/europarl_es"
 
-coco_preprocessing:
+coco:
   max_train_lines: 400000
   max_test_lines: 1000
   max_valid_lines: 1000
   max_sentence_length: 30
-  data_dir: "/scratch1/mcipriano/SCLIP/annotations"
+  caption_dir: "/scratch1/mcipriano/SCLIP/annotations"
+  image_dir:  "/scratch1/mcipriano/SCLIP/val2017"
   out_dir: "/home/mcipriano/projects/SCLIP/coco"
+
+languages:
+  english: en
+  german: de
+  spanish: es

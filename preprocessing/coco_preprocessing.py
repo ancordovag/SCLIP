@@ -61,8 +61,8 @@ def write_coco_files(max_train, max_valid, max_test, data_dir, out_dir):
 if __name__ == "__main__":
     with open("config.yml", "r") as ymlfile:
         cfg = yaml.safe_load(ymlfile)
-    params = cfg["coco_preprocessing"]
+    params = cfg["coco"]
     train_lines = params["max_train_lines"]    
     valid_lines = params["max_valid_lines"]
     test_lines = params["max_test_lines"]
-    write_coco_files(train_lines, valid_lines, test_lines, params["data_dir"], params["out_dir"])
+    write_coco_files(train_lines, valid_lines, test_lines, params["caption_dir"], params["out_dir"])
