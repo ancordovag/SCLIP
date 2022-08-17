@@ -13,6 +13,7 @@ import json
 import os
 from matplotlib import pyplot as plt
 import pandas as pd
+import argparse
 from sentence_transformers import SentenceTransformer
 from networks import SCLIPNN, SCLIPNN3
 from utils import EmbeddingsDataset, get_models_to_train
@@ -28,7 +29,6 @@ logger.addHandler(fhandler)
 logger.setLevel(logging.INFO)
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
-
 print("Loading Models...")
 clip_model, preprocess = clip.load("ViT-B/32", device=device)
 clip_model.eval()
@@ -36,17 +36,23 @@ sbert_model = SentenceTransformer('all-MiniLM-L6-v2')
 sbert_model.eval()
 print("Models Loaded: CLIP, SBERT")
 
-with open("config.yml", "r") as ymlfile:
+# TODO: we should have a different file for the experiments and load it once from the main function
+# TODO: duplicate fragment from experiment.py
+with open(os.path.join("preprocessing", "config.yml"), "r") as ymlfile:
     cfg = yaml.safe_load(ymlfile)
-params = cfg["training"]
+pairs_directory = cfg["coco"]["out_dir"]
+image_directory = cfg["coco"]["image_dir"]
+languages = cfg["languages"]
+
 
 def get_files_paths(directory):
     train_txt = 'train_sentences.txt'    
     valid_txt = 'valid_sentences.txt'
-    train_path = os.path.join(directory,train_txt)    
-    valid_path = os.path.join(directory,valid_txt)
+    train_path = os.path.join(directory, train_txt)
+    valid_path = os.path.join(directory, valid_txt)
     return train_path, valid_path
-    
+
+
 def get_sentences_from_file(filename):
     sentences = []
     with open(filename, mode='rt', encoding='utf-8') as file_object:
@@ -54,11 +60,13 @@ def get_sentences_from_file(filename):
             sentences.append(line)    
     return sentences
 
+
 def regexification(sentences):
     regex = [r"[^A-Za-z0-9]+|[a-zA-Z][0-9]", r"(?<!\d)[0]\d*(?!\d)", r"\s+", r"[0-9]+"]
     for r in regex:
         sentences = list(map(lambda sentence: re.sub(r, " ", sentence), sentences))
     return sentences
+
 
 def get_clip_embeddings(sentences, batch_size=32):
     tokenized_text = clip.tokenize(sentences).to(device)
@@ -72,13 +80,14 @@ def get_clip_embeddings(sentences, batch_size=32):
     final_emb = torch.stack(clip_embeddings_list)
     return final_emb
 
+
 def get_sbert_embeddings(sentences):
     with torch.no_grad():  
         sbert_embeddings = torch.from_numpy(sbert_model.encode(sentences))
     return sbert_embeddings
 
+
 def show_embeddings_return_size(sentences, clip_embeddings, sbert_embeddings):
-    ("-"*10)
     for sentence, clip_embedding, sbert_embedding in zip(sentences[:1], clip_embeddings[:1], sbert_embeddings[:1]):
         print("Sentence:", sentence)
         input_size = sbert_embedding.size()[0]    
@@ -87,23 +96,12 @@ def show_embeddings_return_size(sentences, clip_embeddings, sbert_embeddings):
         print("-"*10)
     return input_size
 
-def get_train_embeddings(directory):
-    train_file, valid_file = get_files_paths(directory)
-    train_sentences = regexification(get_sentences_from_file(train_file))
-    valid_sentences = regexification(get_sentences_from_file(valid_file))
-    print("CLIP encoding...")
-    train_clip_embeddings = get_clip_embeddings(train_sentences)
-    valid_clip_embeddings = get_clip_embeddings(valid_sentences)
-    print("SBERT encoding...")
-    train_sbert_embeddings = get_sbert_embeddings(train_sentences)
-    valid_sbert_embeddings = get_sbert_embeddings(valid_sentences)
-    return train_clip_embeddings, valid_clip_embeddings, train_sbert_embeddings, valid_sbert_embeddings
 
-def show_plot(models,model_train_losses,model_valid_losses,plot_name):
+def show_plot(models, model_train_losses, model_valid_losses, plot_name):
     n = len(models)
     rows = math.ceil(n/4)
     columns = math.ceil(n/rows)
-    fig, axs = plt.subplots(rows,columns,figsize=(18,10))
+    fig, axs = plt.subplots(rows, columns, figsize=(18, 10))
     positions = []
     if rows == 1:
         for c in range(columns):
@@ -111,42 +109,37 @@ def show_plot(models,model_train_losses,model_valid_losses,plot_name):
     else:
         for r in range(rows):
             for c in range(columns):
-                positions.append((r,c))
+                positions.append((r, c))
         
     if n == 1:
         for i, (name, model) in enumerate(models.items()):
-            axs.plot(model_train_losses[i], label = 'train '+ name)
-            axs.plot(model_valid_losses[i], label = 'valid '+ name, marker = '*')
+            axs.plot(model_train_losses[i], label='train ' + name)
+            axs.plot(model_valid_losses[i], label='valid ' + name, marker='*')
             axs.set_title('Losses of '+ name)
             axs.grid()
             axs.legend()
             axs.set(xlabel='Epochs', ylabel='Loss')
     else:
         for i, (name, model) in enumerate(models.items()):
-            axs[positions[i]].plot(model_train_losses[i], label = 'train '+ name)
-            axs[positions[i]].plot(model_valid_losses[i], label = 'valid '+ name, marker = '*')
+            axs[positions[i]].plot(model_train_losses[i], label='train ' + name)
+            axs[positions[i]].plot(model_valid_losses[i], label='valid ' + name, marker='*')
             axs[positions[i]].set_title('Losses of '+ name)
             axs[positions[i]].grid()
             axs[positions[i]].legend()
         for ax in axs.flat:
             ax.set(xlabel='Epochs', ylabel='Loss')
-    
-    
-    
-    #fig.legend()
-    #fig.title('Losses per Epoch')
-    
-    plt.savefig(os.path.join('imgs',plot_name+'.png'))
+
+    # fig.legend()
+    # fig.title('Losses per Epoch')
+
+    plt.savefig(os.path.join('imgs', '{}.png'.format(plot_name)))
     plt.show()
-    
-def train(model, train_dataset, valid_dataset, b_size=32, epochs=200, print_every=params["print_every"]):
-    pairs_directory = cfg["dataset"]["dirname"]
-    image_directory = cfg["dataset"]["images"]
-    #languages = cfg["languages"]
-    languages = {"English": "en", "Spanish": "es"}
+
+
+def train(model, train_dataset, valid_dataset, b_size=32, epochs=200):
     images_features, clip_features, captions = get_image_and_captions_clip_features(languages, image_directory,clip_model, preprocess)
     
-    writer = SummaryWriter()
+    writer = SummaryWriter()  # TODO argument log_dir= should be a folder out of the project dir
     criterion = nn.MSELoss()
     optimizer = optim.SGD(model.parameters(), lr=0.001, momentum=0.9)    
     train_losses = []
@@ -176,13 +169,13 @@ def train(model, train_dataset, valid_dataset, b_size=32, epochs=200, print_ever
         model.eval()
         valid_counter = 0
         sbert_per, clip_per, sbert_MRR, clip_MRR, sbert_er, clip_er = get_MRR(model,pairs_directory,languages,sbert_model,captions, images_features,clip_features)
-        for i, (lang, code)  in enumerate(languages.items()):
+        for i, (lang, code) in enumerate(languages.items()):
             writer.add_scalar(lang+"/Performance/SBERT", sbert_per[i], epoch)
-            #writer.add_scalar(lang+"/Performance/CLIP", clip_per[i], epoch)
+            # writer.add_scalar(lang+"/Performance/CLIP", clip_per[i], epoch)
             writer.add_scalar(lang+"/MRR/SBERT", sbert_MRR[i], epoch)
-            #writer.add_scalar(lang+"/MRR/CLIP", clip_MRR[i], epoch)
+            # writer.add_scalar(lang+"/MRR/CLIP", clip_MRR[i], epoch)
             writer.add_scalar(lang+"/Error/SBERT", sbert_er[i], epoch)
-            #writer.add_scalar(lang+"/Error/CLIP", clip_er[i], epoch)
+            # writer.add_scalar(lang+"/Error/CLIP", clip_er[i], epoch)
             
         for inputs, labels in valid_loader:
             inputs = inputs.to(device)
@@ -193,8 +186,7 @@ def train(model, train_dataset, valid_dataset, b_size=32, epochs=200, print_ever
             valid_counter += 1
         valid_avg_loss = valid_loss/valid_counter    
         valid_losses.append(valid_avg_loss)
-        if (epoch % print_every == 0) or (epoch == epochs - 1):
-            print("Epoch {}. Train Loss: {}. Valid Loss: {}".format(epoch, train_loss/train_counter, valid_loss/valid_counter))
+        print("Epoch {}. Train Loss: {}. Valid Loss: {}".format(epoch, train_loss/train_counter, valid_loss/valid_counter))
         
         writer.add_scalar("Loss/Valid", valid_avg_loss, epoch)
         writer.flush()
@@ -212,7 +204,7 @@ def supra_training(models,train_sbert_emb,train_clip_emb,valid_sbert_emb, valid_
         start_time = time.time()
         train_dataset = EmbeddingsDataset(train_sbert_emb, train_clip_emb)
         valid_dataset = EmbeddingsDataset(valid_sbert_emb, valid_clip_emb)
-        train_loss, valid_loss = train(model, train_dataset, valid_dataset,epochs=n_epochs)
+        train_loss, valid_loss = train(model, train_dataset, valid_dataset, epochs=n_epochs)
         end_time = time.gmtime(time.time() - start_time)
         elapsed_time = time.strftime("%H:%M:%S", end_time)
         training_time.append(elapsed_time)
@@ -228,12 +220,15 @@ def supra_training(models,train_sbert_emb,train_clip_emb,valid_sbert_emb, valid_
         #with open(os.path.join('jsons',name_to_save+'.json'), 'w', encoding='utf-8') as f:
         #    json.dump(data_json, f, ensure_ascii=False, indent=4)
         logger.info(f'Trained model called {name_to_save} at {str_date_time}')
-        torch.save(model.state_dict(), os.path.join('models',name_to_save))
+        if os.path.exists("models"):  # TODO: this should be out of the project folder
+            os.makedirs("models")
+        torch.save(model.state_dict(), os.path.join('models', name_to_save))
         print('Finished Training from model {}. Elapsed time: {}.'.format(name,elapsed_time))
-        #print("-"*50)        
+        # print("-"*50)
     actual_time = time.strftime("%Y/%m/%d, %H:%M:%S", time.gmtime(time.time()))
     print("End of Training Process on {}".format(actual_time))
     return model_train_losses, model_valid_losses, training_time, final_loss
+
 
 def get_train_embeddings(directory):
     train_file, valid_file = get_files_paths(directory)
@@ -247,25 +242,42 @@ def get_train_embeddings(directory):
     valid_sbert_embeddings = get_sbert_embeddings(valid_sentences)
     return train_clip_embeddings, valid_clip_embeddings, train_sbert_embeddings, valid_sbert_embeddings
 
-def run_pipeline(directory, n_epochs):### Training Pipeline
+
+def run_pipeline(directory, n_epochs):  # Training Pipeline
     durations = {}
     finals = {}
     model_dict = {}
     train_clip_emb, valid_clip_emb, train_sbert_emb, valid_sbert_emb = get_train_embeddings(directory)
     train_size = train_sbert_emb.size()[0]
     input_size = train_sbert_emb.size()[1]
-    #print(f'DEBUG: Train Size: {train_size}. Input Size: {input_size}') 
+    # print(f'DEBUG: Train Size: {train_size}. Input Size: {input_size}')
     model_dict[directory] = get_models_to_train(input_size)
-    #print(f'Training on {directory} dataset')
-    #print("Train sbert_ emb : {}".format(train_sbert_emb.size()))
-    #print("Train clip emb: {}".format(train_clip_emb.size()))
-    train_losses, valid_losses, train_time,final_loss = supra_training(model_dict[directory],train_sbert_emb,train_clip_emb, valid_sbert_emb, valid_clip_emb,train_size,trainset=directory,n_epochs=n_epochs)
+    # print(f'Training on {directory} dataset')
+    # print("Train sbert_ emb : {}".format(train_sbert_emb.size()))
+    # print("Train clip emb: {}".format(train_clip_emb.size()))
+    train_losses, valid_losses, train_time, final_loss = supra_training(
+        model_dict[directory],
+        train_sbert_emb,
+        train_clip_emb,
+        valid_sbert_emb,
+        valid_clip_emb,
+        train_size,
+        trainset=directory,
+        n_epochs=n_epochs
+    )
     durations[directory] = train_time
     finals[directory] = final_loss
     train_final_losses = [x[-1] for x in train_losses]
-    train_results = pd.DataFrame({"TrainLoss":train_final_losses, "ValidLoss":final_loss}, index=model_dict[directory].keys())
+    train_results = pd.DataFrame({"TrainLoss": train_final_losses, "ValidLoss": final_loss}, index=model_dict[directory].keys())
     print(train_results)
-    show_plot(model_dict[directory],train_losses,valid_losses,directory+'_'+str(n_epochs)+'_'+str(train_size))
-    
+    show_plot(model_dict[directory], train_losses, valid_losses, directory+'_'+str(n_epochs)+'_'+str(train_size))
+
+
 if __name__ == "__main__":
-    run_pipeline(run_pipeline(params["train_dataset"], params["epochs"]))
+
+    parser = argparse.ArgumentParser(description="SCLIP")
+    parser.add_argument("--dataset", help="decide which dataset to use", default="europarl", type=str)
+    parser.add_argument('--epochs', type=int, default=100, help='how many epoches for this training')
+    args = parser.parse_args()
+
+    run_pipeline(args.dataset, args.epochs)

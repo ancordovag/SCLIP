@@ -20,7 +20,7 @@ languages = cfg["languages"]
 
 
 def get_image(directory, image_id):
-    image = Image.open(directory + image_id)
+    image = Image.open(os.path.join(directory, image_id))
     return image
 
 
@@ -99,8 +99,7 @@ def get_images_and_captions(languages):
     images_of_language = {}
     captions_of_language = {}
     for lang, code in languages.items():        
-        #print("Processing captions in "+ lang +"...")
-        f_json =  open(directory + code + "_pairs.json",mode='r',encoding='utf-8')
+        f_json = open(os.path.join(directory, "{}_pairs.json".format(code)), mode='r', encoding='utf-8')
         pairs_data = json.load(f_json)
         images = []
         captions = []

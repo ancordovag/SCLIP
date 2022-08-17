@@ -38,7 +38,7 @@ def write_coco_files(max_train, max_valid, max_test, data_dir, out_dir):
     test_file.close()
     
     f_val = open(file_val)
-    val_data = json.load(f_val) # 25014 lines
+    val_data = json.load(f_val)  # 25014 lines
     valid_file = open(os.path.join(out_dir, 'valid_sentences.txt'), mode='w', encoding='utf-8')
     # Creating Validation file
     count = 0
