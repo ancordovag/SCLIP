@@ -1,0 +1,23 @@
+preprocessing:
+  max_train_lines: 400000
+  max_test_lines: 1000
+  max_valid_lines: 1000
+  max_sentence_length: 30
+  data_dir: "/scratch1/mcipriano/SCLIP/"
+  out_dir: "/home/mcipriano/projects/SCLIP/europarl"
+
+spanish_preprocessing:
+  max_train_lines: 400000
+  max_test_lines: 1000
+  max_valid_lines: 1000
+  max_sentence_length: 30
+  data_dir: "/scratch1/mcipriano/SCLIP/"
+  out_dir: "/home/mcipriano/projects/SCLIP/europarl_es"
+
+coco_preprocessing:
+  max_train_lines: 400000
+  max_test_lines: 1000
+  max_valid_lines: 1000
+  max_sentence_length: 30
+  data_dir: "/scratch1/mcipriano/SCLIP/annotations"
+  out_dir: "/home/mcipriano/projects/SCLIP/coco"

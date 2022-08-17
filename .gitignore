@@ -8,6 +8,5 @@ runs/
 .idea/
 __pycache__
 .ipynb_checkpoints/
-config.yml
 imgs
 *.log
