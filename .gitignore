@@ -4,8 +4,11 @@ coco/
 coco/*
 europarl/
 europarl/*
+evaluated/
+evaluated/*
 models/
 models/*
+imgs/*
 europarl_es/
 europarl_es/*
 runs/
