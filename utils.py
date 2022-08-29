@@ -22,5 +22,8 @@ def get_models_to_train(input_size):
     print("Creating Models to train...")
     NN_900 = SCLIPNN(input_size, 900).to(device)
     models = {'NN_900':NN_900}
-    print(f'{len(models)} models created.')
+    if len(models) == 1:
+        print(f'1 model created : {models.keys()}')
+    else:
+        print(f'{len(models)} models created.')
     return models

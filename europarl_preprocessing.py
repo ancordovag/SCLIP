@@ -1,7 +1,7 @@
 import yaml
 import os
 
-def write_new_files(max_train_lines, max_valid_lines, max_test_lines, dirname='europarl', max_sentence_length=30):
+def write_new_files(max_train_lines, max_valid_lines, max_test_lines, dirname='europarl', max_sentence_length=35):
     # Open the files
     train_file = open(os.path.join(dirname,'train_sentences.txt'),mode='w',encoding='utf-8')
     valid_file = open(os.path.join(dirname,'valid_sentences.txt'),mode='w',encoding='utf-8')

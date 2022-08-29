@@ -1,6 +1,7 @@
 venv/*
 coco/*
 europarl/*
+europarl_es/*
 .idea/*
 __pycache__/*
 .ipynb_checkpoints/*

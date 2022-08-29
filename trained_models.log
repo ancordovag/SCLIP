@@ -406,3 +406,17 @@
 2022-08-08 19:40:55,090 - sclip_training - INFO - Trained model called europarl_NN_900_e250_s70000.pt at 08-08-2022, 19:40:55
 2022-08-08 20:29:02,188 - sclip_training - INFO - Trained model called europarl_NN_900_e250_s80000.pt at 08-08-2022, 20:29:02
 2022-08-08 21:17:41,815 - sclip_training - INFO - Trained model called europarl_NN_900_e250_s90000.pt at 08-08-2022, 21:17:41
+2022-08-09 21:05:40,714 - sclip_training - INFO - Trained model called europarl_NN_900_e250_s100000.pt at 09-08-2022, 21:05:40
+2022-08-09 23:48:17,586 - sclip_training - INFO - Trained model called europarl_NN_900_e250_s150000.pt at 09-08-2022, 23:48:17
+2022-08-10 06:46:46,276 - sclip_training - INFO - Trained model called europarl_NN_900_e250_s200000.pt at 10-08-2022, 06:46:46
+2022-08-10 09:14:51,180 - sclip_training - INFO - Trained model called europarl_NN_900_e250_s250000.pt at 10-08-2022, 09:14:51
+2022-08-10 12:48:28,043 - sclip_training - INFO - Trained model called europarl_NN_900_e250_s300000.pt at 10-08-2022, 12:48:28
+2022-08-12 10:59:02,272 - sclip_training - INFO - Trained model called europarl_NN_900_e10_s50.pt at 12-08-2022, 10:59:02
+2022-08-12 10:59:19,381 - sclip_training - INFO - Trained model called europarl_NN_900_e10_s100.pt at 12-08-2022, 10:59:19
+2022-08-12 10:59:37,586 - sclip_training - INFO - Trained model called europarl_NN_900_e10_s200.pt at 12-08-2022, 10:59:37
+2022-08-12 16:52:59,973 - sclip_training - INFO - Trained model called europarl_NN_900_e250_s100000.pt at 12-08-2022, 16:52:59
+2022-08-12 18:31:42,901 - sclip_training - INFO - Trained model called europarl_NN_900_e250_s200000.pt at 12-08-2022, 18:31:42
+2022-08-12 20:59:14,078 - sclip_training - INFO - Trained model called europarl_NN_900_e250_s300000.pt at 12-08-2022, 20:59:14
+2022-08-13 00:15:03,369 - sclip_training - INFO - Trained model called europarl_NN_900_e250_s400000.pt at 13-08-2022, 00:15:03
+2022-08-13 04:19:13,840 - sclip_training - INFO - Trained model called europarl_NN_900_e250_s500000.pt at 13-08-2022, 04:19:13
+2022-08-13 08:58:42,580 - sclip_training - INFO - Trained model called europarl_NN_900_e250_s600000.pt at 13-08-2022, 08:58:42

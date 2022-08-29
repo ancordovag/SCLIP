@@ -3,8 +3,8 @@ from coco_preprocessing import write_coco_files
 from sclip_training import run_pipeline
 import sys
 
-directories = ['europarl']
-train_sizes = [90000]
+directories = ['europarl','coco']
+train_sizes = [x*100000 for x in range(1,11)]
 number_epochs = [250]
 
 for tsz in train_sizes:

@@ -47,7 +47,7 @@ def get_files_paths(directory):
     valid_path = os.path.join(directory,valid_txt)
     return train_path, valid_path
     
-def get_sentences_from_file(filename):
+def get_sentences_from_file(fiflename):
     sentences = []
     with open(filename, mode='rt', encoding='utf-8') as file_object:
         for line in file_object:
@@ -145,8 +145,9 @@ def train(model, train_dataset, valid_dataset, b_size=32, epochs=200, print_ever
     #languages = cfg["languages"]
     languages = {"English": "en", "Spanish": "es"}
     images_features, clip_features, captions = get_image_and_captions_clip_features(languages, image_directory,clip_model, preprocess)
-    
-    writer = SummaryWriter()
+    date_time = datetime.now()
+    str_date_time = date_time.strftime("%Y%m%d_%H:%M:%S")
+    writer = SummaryWriter(log_dir=os.path.join('runs', 'TS'+str(len(train_dataset.X))+'_'+str_date_time))
     criterion = nn.MSELoss()
     optimizer = optim.SGD(model.parameters(), lr=0.001, momentum=0.9)    
     train_losses = []
@@ -222,11 +223,11 @@ def supra_training(models,train_sbert_emb,train_clip_emb,valid_sbert_emb, valid_
         date_time = datetime.now()
         str_date_time = date_time.strftime("%d-%m-%Y, %H:%M:%S")
         name_to_save = trainset + '_' + name +'_e'+str(n_epochs)+'_s'+str(size)+ '.pt'
-        #data_json = {"Timestamp":str_date_time, "name_model":name, "hidden_layers":int(name.split("_")[1]), 
-        #             "epochs":n_epochs, "train_size":size, "train_dataset":trainset, "model_saved_as": name_to_save + '.pt',
-        #             "train_loss":round(train_loss[-1],3), "valid_loss":round(valid_loss[-1],3), "elapsed_time": elapsed_time}        
-        #with open(os.path.join('jsons',name_to_save+'.json'), 'w', encoding='utf-8') as f:
-        #    json.dump(data_json, f, ensure_ascii=False, indent=4)
+        data_json = {"Timestamp":str_date_time, "name_model":name, "hidden_layers":int(name.split("_")[1]), 
+                     "epochs":n_epochs, "train_size":size, "train_dataset":trainset, "model_saved_as": name_to_save + '.pt',
+                     "train_loss":round(train_loss[-1],3), "valid_loss":round(valid_loss[-1],3), "elapsed_time": elapsed_time}     
+        with open(os.path.join('jsons',name_to_save+'.json'), 'w', encoding='utf-8') as f:
+            json.dump(data_json, f, ensure_ascii=False, indent=4)
         logger.info(f'Trained model called {name_to_save} at {str_date_time}')
         torch.save(model.state_dict(), os.path.join('models',name_to_save))
         print('Finished Training from model {}. Elapsed time: {}.'.format(name,elapsed_time))
