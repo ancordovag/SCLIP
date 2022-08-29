@@ -13,7 +13,11 @@ europarl_es/
 europarl_es/*
 runs/
 runs/*
+.idea/
 .idea/*
+__pycache__
 __pycache__/*
+.ipynb_checkpoints/
 .ipynb_checkpoints/*
 config.yml
+*.log
