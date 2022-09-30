@@ -101,10 +101,17 @@ def get_images_and_captions(languages):
 
 def get_image_features(images, image_directory, clip_model, preprocess):
     image_features = []
+    #count = 0
     for image_id in images:
+    #    count += 1
         im = get_image(image_directory, image_id)
-        image = preprocess(im).unsqueeze(0).to(device)
-        image_features.append(clip_model.encode_image(image))
+        image = preprocess(im).unsqueeze(0)#.to(device)
+    #    if count % 125 == 0:
+    #        print(f'DEBUG EXPERIMENT. Count: {count}, image_id: {image_id}')
+    #        print(f'Types: image_id {type(image_id)}, im: {type(im)}, image: {type(image)}')
+    #        print(f'IM: {im.size}.')
+    #        print(f'Image: {image.size()}')
+        image_features.append(clip_model.encode_image(image).cpu())
     return image_features   
 
 
@@ -190,7 +197,7 @@ def get_image_and_captions_clip_features(languages, image_directory,clip_model, 
     clip_features = {}
     for lang in languages.keys():
         images_features[lang] = get_image_features(images[lang],image_directory,clip_model, preprocess)
-        clip_features[lang] = get_clip_features(captions[lang],clip_model)
+        clip_features[lang] = get_clip_features(captions[lang],clip_model).cpu()
     return images_features, clip_features, captions
 
 

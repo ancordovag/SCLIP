@@ -7,7 +7,7 @@ import os
 
 if __name__ == '__main__':
 
-    with open(os.path.join("config.yml"), "r") as ymlfile:
+    with open(os.path.join("preprocessing","config.yml"), "r") as ymlfile:
         cfg = yaml.safe_load(ymlfile)
     directory = cfg["coco"]["out_dir"]
     languages = cfg["languages"]
@@ -37,15 +37,15 @@ if __name__ == '__main__':
             translation = translator.translate(caption, dest=code)
             new_caption = translation.text
             item = {'image_id': image_id, 'caption': new_caption}
-            # if i % 500 == 0:
-            #     print("Debug - Caption: {}  --> Translation: {}".format(caption, new_caption))
+            if i % 500 == 0:
+                print("Debug - Caption: {}  --> Translation: {}".format(caption, new_caption))
             data.append(item)
-            time.sleep(0.1)
+            time.sleep(0.05)
         f_json.close()
 
         json_string = json.dumps(data)
         w_json.write(json_string)
         w_json.close()
-        time.sleep(2)
+        time.sleep(0.5)
         print("Language {} finished".format(lang))
     print("Done")

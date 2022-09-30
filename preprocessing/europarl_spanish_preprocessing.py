@@ -1,15 +1,9 @@
 import yaml
 import os
 
-if __name__ == '__main__':
-
-    with open("config.yml", "r") as ymlfile:
-        cfg = yaml.safe_load(ymlfile)
-
-    params = cfg["spanish_preprocessing"]
-    data_dir = params["data_dir"]
+def write_new_files(max_train_lines, max_valid_lines, max_test_lines, data_dir, out_dir, max_sentence_length=30):
+    
     spanish_filename = os.path.join(data_dir, "Europarl.bg-es.es")
-
     out_dir = params["out_dir"]
     if not os.path.exists(out_dir):
         os.makedirs(out_dir)
@@ -44,3 +38,16 @@ if __name__ == '__main__':
     train_file.close()
     test_file.close()
     valid_file.close()
+    
+    
+if __name__ == '__main__':
+    with open("config.yml", "r") as ymlfile:
+        cfg = yaml.safe_load(ymlfile)
+
+    params = cfg["spanish_preprocessing"]
+    train_lines = params["max_train_lines"]
+    valid_lines = params["max_valid_lines"]
+    test_lines = params["max_test_lines"]
+    sentence_length = params["max_sentence_length"]
+    write_new_files(train_lines, valid_lines, test_lines, params["data_dir"], params["out_dir"], sentence_length)
+    

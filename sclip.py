@@ -239,38 +239,40 @@ def evaluate(models, test_clip_embeddings, test_sbert_embeddings,trainset):
             euclideans.append(round(avg_euclidean.item(),3))    
     return cosines, euclideans
 
-### Training Pipeline
-durations = {}
-finals = {}
-train_clip_emb, valid_clip_emb, train_sbert_emb, valid_sbert_emb = get_train_embeddings(directory)
-input_size = train_sbert_emb[0].size()[0]
-models = get_models_to_train(input_size)
-
-directories = ['europarl','coco']
-for directory in directories:
-    print(f'Training on {directory} dataset')
-    train_losses, valid_losses, train_time,final_loss = supra_training(models,train_sbert_emb,train_clip_emb, valid_sbert_emb, valid_clip_emb,trainset=directory)
-    durations[directory] = train_time
-    finals[directory] = final_loss
-    train_final_losses = [x[-1] for x in train_losses]
-    train_results = pd.DataFrame({"TrainLoss":train_final_losses, "ValidLoss":final_loss}, index=models.keys())
-    display(train_results)
-    show_plot(models,train_losses,valid_losses)
+if __name__ == "__main__":
     
-print("Evaluating...")
-directories = ['europarl','coco'] #params['test_dataset']
-for directory in directories:
-    print(f'Evaluating with test dataset {directory}...')    
-    test_clip_emb, test_sbert_emb = get_test_embeddings(directory)
-    for train_directory in directories:
-        print(f'...the model trained on {train_directory}')
-        start_time = time.time()
-        cosines, euclideans = evaluate(models,test_clip_emb, test_sbert_emb,trainset=train_directory)
-        end_time = time.gmtime(time.time() - start_time)
-        evaluation_time = time.strftime("%H:%M:%S", end_time)
-        print("Evaluation Time: {}".format(evaluation_time))
-        data = {"Cosin":cosines, "Euclidean":euclideans, 
-                "TrainTime":durations[directory], "ValLoss":finals[directory]}
-        results = pd.DataFrame(data, index=models.keys())
-        display(results)
-print("End of Evaluation")
+    ### Training Pipeline
+    durations = {}
+    finals = {}
+    train_clip_emb, valid_clip_emb, train_sbert_emb, valid_sbert_emb = get_train_embeddings(directory)
+    input_size = train_sbert_emb[0].size()[0]
+    models = get_models_to_train(input_size)
+
+    directories = ['europarl']
+    for directory in directories:
+        print(f'Training on {directory} dataset')
+        train_losses, valid_losses, train_time,final_loss = supra_training(models,train_sbert_emb,train_clip_emb, valid_sbert_emb, valid_clip_emb,trainset=directory)
+        durations[directory] = train_time
+        finals[directory] = final_loss
+        train_final_losses = [x[-1] for x in train_losses]
+        train_results = pd.DataFrame({"TrainLoss":train_final_losses, "ValidLoss":final_loss}, index=models.keys())
+        display(train_results)
+        show_plot(models,train_losses,valid_losses)
+
+    print("Evaluating...")
+    directories = ['europarl','coco'] #params['test_dataset']
+    for directory in directories:
+        print(f'Evaluating with test dataset {directory}...')    
+        test_clip_emb, test_sbert_emb = get_test_embeddings(directory)
+        for train_directory in directories:
+            print(f'...the model trained on {train_directory}')
+            start_time = time.time()
+            cosines, euclideans = evaluate(models,test_clip_emb, test_sbert_emb,trainset=train_directory)
+            end_time = time.gmtime(time.time() - start_time)
+            evaluation_time = time.strftime("%H:%M:%S", end_time)
+            print("Evaluation Time: {}".format(evaluation_time))
+            data = {"Cosin":cosines, "Euclidean":euclideans, 
+                    "TrainTime":durations[directory], "ValLoss":finals[directory]}
+            results = pd.DataFrame(data, index=models.keys())
+            display(results)
+    print("End of Evaluation")

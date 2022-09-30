@@ -11,11 +11,11 @@ import time
 import yaml
 import json
 import os
+import sys
 from matplotlib import pyplot as plt
 import pandas as pd
 import argparse
 from sentence_transformers import SentenceTransformer
-from networks import SCLIPNN, SCLIPNN3
 from utils import EmbeddingsDataset, get_models_to_train
 import logging
 from datetime import datetime
@@ -67,6 +67,28 @@ def regexification(sentences):
         sentences = list(map(lambda sentence: re.sub(r, " ", sentence), sentences))
     return sentences
 
+def truncate_sentence(sentence, length=55):
+    new_sentences = []
+    splitted = sentence.split()
+    N = len(splitted)
+    if  N < length:
+        new_sentences.append(sentence)
+        return new_sentences
+    
+    result = ""
+    for i in range(length):
+        result += splitted[i] + " "
+    result = result[:-1]
+    new_sentences.append(result)
+                         
+    rest = ""
+    for i in range(length,N):
+        rest += splitted[i] + " "
+    rest = rest[:-1]
+    other_sentences = truncate_sentence(rest)
+    for os in other_sentences:
+        new_sentences.append(os)
+    return new_sentences
 
 def get_clip_embeddings(sentences, batch_size=32):
     tokenized_text = clip.tokenize(sentences).to(device)
@@ -77,6 +99,18 @@ def get_clip_embeddings(sentences, batch_size=32):
             clip_embeddings_batch = clip_model.encode_text(tok_batch).to(device)
             for unity in clip_embeddings_batch:
                 clip_embeddings_list.append(unity)
+    final_emb = torch.stack(clip_embeddings_list)
+    return final_emb
+
+def get_clip_long_embeddings(sentences, batch_size=32):
+    clip_embeddings_list = []
+    for sentence in sentences:
+        short_sentences = truncate_sentence(sentence)
+        tokenized_text = clip.tokenize(short_sentences).to(device)
+        with torch.no_grad():            
+            clip_embeddings_sentences = clip_model.encode_text(tokenized_text).to(device)
+            clip_embeddings = torch.mean(clip_embeddings_sentences,0)
+            clip_embeddings_list.append(clip_embeddings)
     final_emb = torch.stack(clip_embeddings_list)
     return final_emb
 
@@ -101,7 +135,7 @@ def show_plot(models, model_train_losses, model_valid_losses, plot_name):
     n = len(models)
     rows = math.ceil(n/4)
     columns = math.ceil(n/rows)
-    fig, axs = plt.subplots(rows, columns, figsize=(18, 10))
+    fig, axs = plt.subplots(rows, columns, figsize=(15, 7))
     positions = []
     if rows == 1:
         for c in range(columns):
@@ -131,10 +165,13 @@ def show_plot(models, model_train_losses, model_valid_losses, plot_name):
 
     # fig.legend()
     # fig.title('Losses per Epoch')
-    if not os.path.exists("imgs"):  # TODO: this should point to a "result" folder out of the project dir
-        os.makedirs("imgs")
-    plt.savefig(os.path.join('imgs', '{}.png'.format(plot_name)))
-    plt.show()
+    if not os.path.exists('imgs'):  # TODO: this should point to a "result" folder out of the project dir
+        print("Folder imgs does not exist in current directory")
+        os.makedirs('imgs')
+        
+    path_to_save = os.path.join('imgs', '{}.png'.format(plot_name))
+    plt.savefig(path_to_save)
+    #plt.show()
 
 
 def train(model, train_dataset, valid_dataset, b_size=32, epochs=200):
@@ -142,7 +179,8 @@ def train(model, train_dataset, valid_dataset, b_size=32, epochs=200):
     
     writer = SummaryWriter()  # TODO argument log_dir= should be a folder out of the project dir
     criterion = nn.MSELoss()
-    optimizer = optim.SGD(model.parameters(), lr=0.001, momentum=0.9)    
+    optimizer = optim.SGD(model.parameters(), lr=0.008, momentum=0.9)
+    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer,factor=0.5)
     train_losses = []
     valid_losses = []
     for epoch in range(epochs):  # loop over the dataset multiple times
@@ -153,7 +191,7 @@ def train(model, train_dataset, valid_dataset, b_size=32, epochs=200):
         train_counter = 0
         for inputs, labels in train_loader:
             inputs = inputs.to(device)
-            labels = labels.to(device)            
+            labels = labels.to(device)
             optimizer.zero_grad()
             output = model(inputs)
             loss = criterion(output.to(float), labels.to(float))       
@@ -169,31 +207,36 @@ def train(model, train_dataset, valid_dataset, b_size=32, epochs=200):
         valid_loss = 0.0
         model.eval()
         valid_counter = 0
-        sbert_per, clip_per, sbert_MRR, clip_MRR, sbert_er, clip_er = get_MRR(model,pairs_directory,languages,sbert_model,captions, images_features,clip_features)
-        for i, (lang, code) in enumerate(languages.items()):
-            writer.add_scalar(lang+"/Performance/SBERT", sbert_per[i], epoch)
-            # writer.add_scalar(lang+"/Performance/CLIP", clip_per[i], epoch)
-            writer.add_scalar(lang+"/MRR/SBERT", sbert_MRR[i], epoch)
-            # writer.add_scalar(lang+"/MRR/CLIP", clip_MRR[i], epoch)
-            writer.add_scalar(lang+"/Error/SBERT", sbert_er[i], epoch)
-            # writer.add_scalar(lang+"/Error/CLIP", clip_er[i], epoch)
+        
+        if epoch % 10 == 0:
+            sbert_per, clip_per, sbert_MRR, clip_MRR, sbert_er, clip_er = get_MRR(model,pairs_directory,languages,sbert_model,captions, images_features,clip_features)                                                     
+            for i, (lang, code) in enumerate(languages.items()):
+                writer.add_scalar(lang+"/Performance/SBERT", sbert_per[i], epoch)
+                writer.add_scalar(lang+"/Performance/CLIP", clip_per[i], epoch)
+                writer.add_scalar(lang+"/MRR/SBERT", sbert_MRR[i], epoch)
+                writer.add_scalar(lang+"/MRR/CLIP", clip_MRR[i], epoch)
+                writer.add_scalar(lang+"/Error/SBERT", sbert_er[i], epoch)
+                writer.add_scalar(lang+"/Error/CLIP", clip_er[i], epoch)
             
         for inputs, labels in valid_loader:
             inputs = inputs.to(device)
             labels = labels.to(device)
             target = model(inputs)
             loss = criterion(target.to(float), labels.to(float))
-            valid_loss += loss.item()
+            valid_loss += loss.item()           
             valid_counter += 1
-        valid_avg_loss = valid_loss/valid_counter    
+        valid_avg_loss = valid_loss/valid_counter 
+        scheduler.step(valid_avg_loss)
         valid_losses.append(valid_avg_loss)
-        print("Epoch {}. Train Loss: {}. Valid Loss: {}".format(epoch, train_loss/train_counter, valid_loss/valid_counter))
+        if epoch % 75 == 0 or epoch == epochs:            
+            new_lr = [ group['lr'] for group in optimizer.param_groups ] # scheduler.get_last_lr() not working
+            print("Epoch {}. Train Loss: {}. Valid Loss: {}. LR: {}".format(epoch, train_loss/train_counter, valid_loss/valid_counter, new_lr[0]))
         
         writer.add_scalar("Loss/Valid", valid_avg_loss, epoch)
         writer.flush()
         
-    writer.close()        
-        
+    writer.close()
+    
     return train_losses, valid_losses
 
 def supra_training(models,train_sbert_emb,train_clip_emb,valid_sbert_emb, valid_clip_emb, size, trainset,n_epochs):
@@ -209,6 +252,7 @@ def supra_training(models,train_sbert_emb,train_clip_emb,valid_sbert_emb, valid_
         end_time = time.gmtime(time.time() - start_time)
         elapsed_time = time.strftime("%H:%M:%S", end_time)
         training_time.append(elapsed_time)
+        
         model_train_losses.append(train_loss)                   
         model_valid_losses.append(valid_loss)
         final_loss.append(round(valid_loss[-1],5))
@@ -222,6 +266,7 @@ def supra_training(models,train_sbert_emb,train_clip_emb,valid_sbert_emb, valid_
         #    json.dump(data_json, f, ensure_ascii=False, indent=4)
         logger.info(f'Trained model called {name_to_save} at {str_date_time}')
         if not os.path.exists("models"):  # TODO: this should be out of the project folder
+            print("Folder Models does not exist in current directory")
             os.makedirs("models")
         torch.save(model.state_dict(), os.path.join('models', name_to_save))
         print('Finished Training from model {}. Elapsed time: {}.'.format(name,elapsed_time))
@@ -275,7 +320,6 @@ def run_pipeline(directory, n_epochs):  # Training Pipeline
 
 
 if __name__ == "__main__":
-
     parser = argparse.ArgumentParser(description="SCLIP")
     parser.add_argument("--dataset", help="decide which dataset to use", default="europarl", type=str)
     parser.add_argument('--epochs', type=int, default=100, help='how many epoches for this training')

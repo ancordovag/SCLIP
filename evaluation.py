@@ -16,7 +16,7 @@ from sentence_transformers import SentenceTransformer
 from networks import SCLIPNN, SCLIPNN3
 from utils import EmbeddingsDataset
 import logging
-from mixer_testsets import write_test_file
+from preprocessing.test_mixer import mix_test_files
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
 print("Loading Models...")
@@ -128,13 +128,21 @@ def evaluate(models, input_size, test_dataset,name_testset):
                 json.dump(data_json, f, ensure_ascii=False, indent=4)
     return cosines, euclideans                                   
 
-def run_evaluation(directory='', n_epochs=0, testset='mixed', test_size=5000):
+def run_evaluation(directory='', n_epochs=0, testset='mixed'):
     test_file = ''
     if testset == 'mixed':
-        test_file = 'mixed_test_sentences_'+str(test_size)+'.txt'
+        test_file = 'test_mix.txt'
         if not exists(test_file):
             print("Creating file " + test_file)
-            write_test_file(test_size)        
+            with open(os.path.join("preprocessing","config.yml"), "r") as ymlfile:
+                cfg = yaml.safe_load(ymlfile)
+                params = cfg["test"]
+                size = params["size"]
+                test_mixer.mix_test_files(params["size"], params["europarl_dir"], params["coco_dir"], params["out_dir"])
+        else:
+            with open('test_mix.txt', 'r') as file:
+                lines = file.readlines()
+                size = len(lines)
     models_to_evaluate = []
     all_models = os.listdir('models')
     for am in all_models:
@@ -150,8 +158,8 @@ def run_evaluation(directory='', n_epochs=0, testset='mixed', test_size=5000):
     start_time = time.time()
     cosines, euclideans = evaluate(models_to_evaluate,input_size,test_dataset,name_testset=testset)
     end_time = time.gmtime(time.time() - start_time)
-    evaluation_time = time.strftime("%H:%M:%S", end_time)    
-    print("Evaluation Time: {}".format(evaluation_time))
+    evaluation_time = time.strftime("%H:%M:%S", end_time)  
+    print("Evaluation Time: {}. Size: {}".format(evaluation_time),size)
     data = {"Cosin":cosines, "Euclidean":euclideans}
     indices = []
     for km in models_to_evaluate:
@@ -160,4 +168,4 @@ def run_evaluation(directory='', n_epochs=0, testset='mixed', test_size=5000):
     print(results)
 
 if __name__ == "__main__":
-    run_evaluation(directory='europarl',test_size=5000)
+    run_evaluation(directory='europarl')
