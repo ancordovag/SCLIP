@@ -32,7 +32,7 @@ device = "cuda" if torch.cuda.is_available() else "cpu"
 print("Loading Models...")
 clip_model, preprocess = clip.load("ViT-B/32", device=device)
 clip_model.eval()
-sbert_model = SentenceTransformer('all-MiniLM-L6-v2')
+sbert_model = SentenceTransformer('distiluse-base-multilingual-cased-v1') #all-MiniLM-L6-v2')
 sbert_model.eval()
 print("Models Loaded: CLIP, SBERT")
 
@@ -174,10 +174,10 @@ def show_plot(models, model_train_losses, model_valid_losses, plot_name):
     #plt.show()
 
 
-def train(model, train_dataset, valid_dataset, b_size=32, epochs=200):
+def train(model, train_dataset, valid_dataset, directory='', b_size=32, epochs=200):
     images_features, clip_features, captions = get_image_and_captions_clip_features(languages, image_directory,clip_model, preprocess)
-    
-    writer = SummaryWriter()  # TODO argument log_dir= should be a folder out of the project dir
+    #print(f'DEBUG. Variable directory type: {type(directory)}')
+    writer = SummaryWriter(comment=f'_{directory}')  # TODO argument log_dir= should be a folder out of the project dir
     criterion = nn.MSELoss()
     optimizer = optim.SGD(model.parameters(), lr=0.008, momentum=0.9)
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer,factor=0.5)
@@ -208,7 +208,7 @@ def train(model, train_dataset, valid_dataset, b_size=32, epochs=200):
         model.eval()
         valid_counter = 0
         
-        if epoch % 10 == 0:
+        if epoch % 20 == 0:
             sbert_per, clip_per, sbert_MRR, clip_MRR, sbert_er, clip_er = get_MRR(model,pairs_directory,languages,sbert_model,captions, images_features,clip_features)                                                     
             for i, (lang, code) in enumerate(languages.items()):
                 writer.add_scalar(lang+"/Performance/SBERT", sbert_per[i], epoch)
@@ -228,8 +228,8 @@ def train(model, train_dataset, valid_dataset, b_size=32, epochs=200):
         valid_avg_loss = valid_loss/valid_counter 
         scheduler.step(valid_avg_loss)
         valid_losses.append(valid_avg_loss)
-        if epoch % 75 == 0 or epoch == epochs:            
-            new_lr = [ group['lr'] for group in optimizer.param_groups ] # scheduler.get_last_lr() not working
+        if epoch % 50 == 0 or epoch == epochs-1:
+            new_lr = [ group['lr'] for group in optimizer.param_groups ] 
             print("Epoch {}. Train Loss: {}. Valid Loss: {}. LR: {}".format(epoch, train_loss/train_counter, valid_loss/valid_counter, new_lr[0]))
         
         writer.add_scalar("Loss/Valid", valid_avg_loss, epoch)
@@ -239,7 +239,7 @@ def train(model, train_dataset, valid_dataset, b_size=32, epochs=200):
     
     return train_losses, valid_losses
 
-def supra_training(models,train_sbert_emb,train_clip_emb,valid_sbert_emb, valid_clip_emb, size, trainset,n_epochs):
+def supra_training(models,train_sbert_emb,train_clip_emb, valid_sbert_emb, valid_clip_emb, size, directory, n_epochs):
     model_train_losses = []
     model_valid_losses = []
     final_loss = []
@@ -248,7 +248,7 @@ def supra_training(models,train_sbert_emb,train_clip_emb,valid_sbert_emb, valid_
         start_time = time.time()
         train_dataset = EmbeddingsDataset(train_sbert_emb, train_clip_emb)
         valid_dataset = EmbeddingsDataset(valid_sbert_emb, valid_clip_emb)
-        train_loss, valid_loss = train(model, train_dataset, valid_dataset, epochs=n_epochs)
+        train_loss, valid_loss = train(model, train_dataset, valid_dataset, directory, epochs=n_epochs)
         end_time = time.gmtime(time.time() - start_time)
         elapsed_time = time.strftime("%H:%M:%S", end_time)
         training_time.append(elapsed_time)
@@ -258,12 +258,12 @@ def supra_training(models,train_sbert_emb,train_clip_emb,valid_sbert_emb, valid_
         final_loss.append(round(valid_loss[-1],5))
         date_time = datetime.now()
         str_date_time = date_time.strftime("%d-%m-%Y, %H:%M:%S")
-        name_to_save = trainset + '_' + name +'_e'+str(n_epochs)+'_s'+str(size)+ '.pt'
-        #data_json = {"Timestamp":str_date_time, "name_model":name, "hidden_layers":int(name.split("_")[1]), 
-        #             "epochs":n_epochs, "train_size":size, "train_dataset":trainset, "model_saved_as": name_to_save + '.pt',
-        #             "train_loss":round(train_loss[-1],3), "valid_loss":round(valid_loss[-1],3), "elapsed_time": elapsed_time}        
-        #with open(os.path.join('jsons',name_to_save+'.json'), 'w', encoding='utf-8') as f:
-        #    json.dump(data_json, f, ensure_ascii=False, indent=4)
+        name_to_save = directory + '_' + name +'_e'+str(n_epochs)+'_s'+str(size)+ '.pt'
+        data_json = {"Timestamp":str_date_time, "name_model":name, "hidden_layers":int(name.split("_")[1]), 
+                     "epochs":n_epochs, "train_size":size, "train_dataset":directory, "model_saved_as": name_to_save + '.pt',
+                     "train_loss":round(train_loss[-1],3), "valid_loss":round(valid_loss[-1],3), "elapsed_time": elapsed_time}        
+        with open(os.path.join('jsons',name_to_save+'.json'), 'w', encoding='utf-8') as f:
+            json.dump(data_json, f, ensure_ascii=False, indent=4)
         logger.info(f'Trained model called {name_to_save} at {str_date_time}')
         if not os.path.exists("models"):  # TODO: this should be out of the project folder
             print("Folder Models does not exist in current directory")
@@ -308,7 +308,7 @@ def run_pipeline(directory, n_epochs):  # Training Pipeline
         valid_sbert_emb,
         valid_clip_emb,
         train_size,
-        trainset=directory,
+        directory=directory,
         n_epochs=n_epochs
     )
     durations[directory] = train_time

@@ -1,0 +1,12 @@
+{
+    "Timestamp": "28-10-2022, 16:03:20",
+    "name_model": "NN_900",
+    "hidden_layers": 900,
+    "epochs": 300,
+    "train_size": 200000,
+    "train_dataset": "esco",
+    "model_saved_as": "esco_NN_900_e300_s200000.pt.pt",
+    "train_loss": 0.018,
+    "valid_loss": 0.018,
+    "elapsed_time": "01:48:20"
+}

@@ -1,0 +1,12 @@
+{
+    "Timestamp": "10-10-2022, 09:37:12",
+    "name_model": "NN_900",
+    "hidden_layers": 900,
+    "epochs": 300,
+    "train_size": 500000,
+    "train_dataset": "europarl",
+    "model_saved_as": "europarl_NN_900_e300_s500000.pt.pt",
+    "train_loss": 0.023,
+    "valid_loss": 0.024,
+    "elapsed_time": "04:24:38"
+}

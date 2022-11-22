@@ -1,0 +1,12 @@
+{
+    "Timestamp": "08-10-2022, 13:29:47",
+    "name_model": "NN_900",
+    "hidden_layers": 900,
+    "epochs": 100,
+    "train_size": 1200,
+    "train_dataset": "mix",
+    "model_saved_as": "mix_NN_900_e100_s1200.pt.pt",
+    "train_loss": 0.064,
+    "valid_loss": 0.068,
+    "elapsed_time": "00:00:24"
+}

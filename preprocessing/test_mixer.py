@@ -16,7 +16,6 @@ def mix_test_files(size, europarl_dir, coco_dir, out_dir):
         for line in euro_lines:
             line = line.replace('\n','')
             all_lines.append(line+'\n')
-            all_lines.append(line)
                         
     with open(coco_path, mode='r', encoding='utf-8') as file:
         coco_lines = file.readlines()
@@ -43,6 +42,6 @@ def mix_test_files(size, europarl_dir, coco_dir, out_dir):
 if __name__ == "__main__":
     with open(os.path.join("preprocessing","config.yml"), "r") as ymlfile:
         cfg = yaml.safe_load(ymlfile)
-    params = cfg["test"]
+    params = cfg["mix"]
     size = params["size"]
     mix_test_files(params["size"], params["europarl_dir"], params["coco_dir"], params["out_dir"])

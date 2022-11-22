@@ -10,6 +10,7 @@ def create_pairs():
         cfg = yaml.safe_load(ymlfile)
     coco_config = cfg["coco"]
     images_directory = coco_config["image_dir"]
+    amount_pairs = coco_config["pairs"]
     annotation_directory = os.path.join(coco_config["caption_dir"], 'captions_val2017.json')
 
     f_val = open(annotation_directory)
@@ -31,8 +32,8 @@ def create_pairs():
                 onlyfiles.remove(image_id)
                 count += 1
                 break
-        #if count >= 50:
-        #    break
+        if count >= amount_pairs:
+            break
             
     f_val.close()
     print("Number of pairs: {}".format(count))

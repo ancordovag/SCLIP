@@ -105,13 +105,13 @@ def get_image_features(images, image_directory, clip_model, preprocess):
     for image_id in images:
     #    count += 1
         im = get_image(image_directory, image_id)
-        image = preprocess(im).unsqueeze(0)#.to(device)
+        image = preprocess(im).unsqueeze(0).to(device)
     #    if count % 125 == 0:
     #        print(f'DEBUG EXPERIMENT. Count: {count}, image_id: {image_id}')
     #        print(f'Types: image_id {type(image_id)}, im: {type(im)}, image: {type(image)}')
     #        print(f'IM: {im.size}.')
     #        print(f'Image: {image.size()}')
-        image_features.append(clip_model.encode_image(image).cpu())
+        image_features.append(clip_model.encode_image(image).to("cpu"))
     return image_features   
 
 
@@ -122,7 +122,7 @@ def get_clip_features(captions, clip_model):
     return clip_features  
 
 
-def get_MRR(model,directory, languages,sbert_model,captions,images_features, clip_features):
+def get_MRR(model, directory, languages, sbert_model, captions, images_features, clip_features):
     sbert_lang_performance = []
     clip_lang_performance = []
     sbert_lang_errors = []
@@ -134,8 +134,13 @@ def get_MRR(model,directory, languages,sbert_model,captions,images_features, cli
 
         with torch.no_grad():
             try:
-                torch_features = torch.from_numpy(sbert_model.encode(captions[lang])).to(device)
-                sbert_features = model(torch_features).type(torch.float16)                
+                # TODO : batch, stack and send the result to cpu
+                sbert_embeddings_list = []
+                for sentence in captions[lang]:
+                    torch_features = torch.from_numpy(sbert_model.encode([sentence])).to(device)
+                    sbert_features = model(torch_features).type(torch.float16)
+                    sbert_embeddings_list.append(sert_features)
+                sbert_final_emb = torch.stack(sbert_embeddings_list)              
             except:
                 #print("Not able to tokenize in {}. Skipping language {}".format(lang, code))
                 vetoed.append(lang)
@@ -151,10 +156,10 @@ def get_MRR(model,directory, languages,sbert_model,captions,images_features, cli
 
             for image_feature in images_features[lang]:
                 # Get the probabilities for SBERT and CLIP
-                logits_image_sbert, logits_text_sbert = get_logits(image_feature, sbert_features)
+                logits_image_sbert, logits_text_sbert = get_logits(image_feature, sbert_final_emb)
                 logits_image_clip, logits_text_clip = get_logits(image_feature, clip_features[lang])
-                probs_clip = logits_image_clip.softmax(dim=-1).cpu().numpy()
-                probs_sbert = logits_image_sbert.softmax(dim=-1).cpu().numpy()
+                probs_clip = logits_image_clip.softmax(dim=-1).to('cpu').numpy()
+                probs_sbert = logits_image_sbert.softmax(dim=-1).to('cpu').numpy()
 
                 # Append the probs to array            
                 ps = probs_sbert[0][counter]
@@ -197,7 +202,7 @@ def get_image_and_captions_clip_features(languages, image_directory,clip_model, 
     clip_features = {}
     for lang in languages.keys():
         images_features[lang] = get_image_features(images[lang],image_directory,clip_model, preprocess)
-        clip_features[lang] = get_clip_features(captions[lang],clip_model).cpu()
+        clip_features[lang] = get_clip_features(captions[lang],clip_model).to(device)
     return images_features, clip_features, captions
 
 

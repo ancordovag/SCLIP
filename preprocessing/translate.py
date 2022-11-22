@@ -37,15 +37,15 @@ if __name__ == '__main__':
             translation = translator.translate(caption, dest=code)
             new_caption = translation.text
             item = {'image_id': image_id, 'caption': new_caption}
-            if i % 500 == 0:
+            if i % 100 == 0:
                 print("Debug - Caption: {}  --> Translation: {}".format(caption, new_caption))
             data.append(item)
-            time.sleep(0.05)
+            time.sleep(0.03)
         f_json.close()
 
         json_string = json.dumps(data)
         w_json.write(json_string)
         w_json.close()
-        time.sleep(0.5)
+        time.sleep(0.05)
         print("Language {} finished".format(lang))
     print("Done")
