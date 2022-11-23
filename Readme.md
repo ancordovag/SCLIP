@@ -9,7 +9,9 @@ Download the Europarl corpus and COCO in your dataset folder (e.g. _/data/SCLIP_
 
 ```
 ./get_data /data/SCLIP
+
 ```
+
 
 Edit the path in `preprocessing/config.yaml` to point to your dataset folder (e.g. _/data/SCLIP_).
 Finally Generate all the training files by runnning: 
