@@ -4,6 +4,8 @@ coco/
 coco/*
 europarl/
 europarl/*
+gcc/
+gcc/*
 evaluated/
 evaluated/*
 models/

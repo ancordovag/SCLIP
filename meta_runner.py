@@ -5,7 +5,6 @@ from bertin_training import run_bertin_pipeline
 import yaml
 import os
 
-# MIX should be at the end
 source_dirs = ['esco']
 train_sizes = [x*100000 for x in range(1,3)]
 number_epochs = [300]

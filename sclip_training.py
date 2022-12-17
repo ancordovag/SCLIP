@@ -12,6 +12,7 @@ import yaml
 import json
 import os
 import sys
+import wandb
 from matplotlib import pyplot as plt
 import pandas as pd
 import argparse
@@ -21,6 +22,7 @@ import logging
 from datetime import datetime
 from experiment import get_MRR, get_image_and_captions_clip_features
 
+wandb.init(project="test-project", entity="sclip")
 logger = logging.getLogger(__name__)
 fhandler = logging.FileHandler(filename='trained_models.log', mode='a')
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -201,6 +203,7 @@ def train(model, train_dataset, valid_dataset, directory='', b_size=32, epochs=2
             train_counter += 1
         train_avg_loss = train_loss/train_counter
         train_losses.append(train_avg_loss)
+        wandb.log({"Loss/Train": loss},step=epoch)
         writer.add_scalar("Loss/Train", train_avg_loss, epoch)
         writer.flush()
         
@@ -211,6 +214,12 @@ def train(model, train_dataset, valid_dataset, directory='', b_size=32, epochs=2
         if epoch % 20 == 0:
             sbert_per, clip_per, sbert_MRR, clip_MRR, sbert_er, clip_er = get_MRR(model,pairs_directory,languages,sbert_model,captions, images_features,clip_features)                                                     
             for i, (lang, code) in enumerate(languages.items()):
+                wandb.log({lang+"/Performance/SBERT", sbert_per[i]}, epoch)
+                wandb.log({lang+"/Performance/CLIP", clip_per[i]}, epoch)
+                wandb.log({lang+"/MRR/SBERT", sbert_MRR[i]}, epoch)
+                wandb.log({lang+"/MRR/CLIP", clip_MRR[i]}, epoch)
+                wandb.log({lang+"/Error/SBERT", sbert_er[i]}, epoch)
+                wandb.log({lang+"/Error/CLIP": clip_er[i]}, epoch)
                 writer.add_scalar(lang+"/Performance/SBERT", sbert_per[i], epoch)
                 writer.add_scalar(lang+"/Performance/CLIP", clip_per[i], epoch)
                 writer.add_scalar(lang+"/MRR/SBERT", sbert_MRR[i], epoch)
