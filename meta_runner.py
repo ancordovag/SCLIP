@@ -5,8 +5,8 @@ from bertin_training import run_bertin_pipeline
 import yaml
 import os
 
-source_dirs = ['esco']
-train_sizes = [x*100000 for x in range(1,3)]
+source_dirs = ['coco']
+train_sizes = [410000]
 number_epochs = [300]
 with open(os.path.join('preprocessing','config.yml'), "r") as ymlfile:
     cfg = yaml.safe_load(ymlfile)

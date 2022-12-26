@@ -1,0 +1,12 @@
+{
+    "Timestamp": "19-12-2022, 04:22:23",
+    "name_model": "NN_1000",
+    "hidden_layers": 1000,
+    "epochs": 300,
+    "train_size": 400000,
+    "train_dataset": "/home/users/acordova/project/SCLIP/coco",
+    "model_saved_as": "/home/users/acordova/project/SCLIP/coco_NN_1000_e300_s400000.pt.pt",
+    "train_loss": 0.021,
+    "valid_loss": 0.022,
+    "elapsed_time": "04:28:19"
+}
