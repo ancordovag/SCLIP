@@ -1,0 +1,12 @@
+{
+    "Timestamp": "02-02-2023, 02:13:38",
+    "name_model": "NN3_1000",
+    "hidden_layers": 1000,
+    "epochs": 150,
+    "train_size": 3127982,
+    "train_dataset": "gco",
+    "model_saved_as": "gco_NN3_1000_e150_s3127982.pt.pt",
+    "train_loss": 0.025,
+    "valid_loss": 0.025,
+    "elapsed_time": "04:56:45"
+}

@@ -311,8 +311,8 @@ def get_MRR(languages, model, sbert_model, clip_model, captions, images_features
 def train(model, sbert_model, clip_model, train_dataset, valid_dataset, languages, captions, images_features, b_size=32, epochs=200):
     writer = SummaryWriter(comment='train')  # TODO argument log_dir= should be a folder out of the project dir
     criterion = nn.MSELoss()
-    optimizer = optim.SGD(model.parameters(), lr=0.008, momentum=0.9)
-    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer,factor=0.5)
+    optimizer = optim.SGD(model.parameters(), lr=0.0001, momentum=0.9)
+    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer,factor=0.5, patience=2, threshold=0.0001, verbose=True)
     train_losses = []
     valid_losses = []
     for epoch in range(epochs):  # loop over the dataset multiple times
@@ -341,7 +341,8 @@ def train(model, sbert_model, clip_model, train_dataset, valid_dataset, language
         model.eval()
         valid_counter = 0
         
-        if epoch % 50 == 0:
+        
+        if epoch % 25 == 0:
             sbert_per, clip_per, sbert_MRR, clip_MRR, sbert_er, clip_er = get_MRR(languages, model, sbert_model, clip_model, captions, images_features)                 
             #print("SBERT_PER: {}".format(sbert_per))
             for i, (lang, code) in enumerate(languages.items()):
@@ -357,7 +358,7 @@ def train(model, sbert_model, clip_model, train_dataset, valid_dataset, language
                 writer.add_scalar(lang+"/MRR/CLIP", clip_MRR[i], epoch)
                 writer.add_scalar(lang+"/Error/SBERT", sbert_er[i], epoch)
                 writer.add_scalar(lang+"/Error/CLIP", clip_er[i], epoch)
-            
+        
         for inputs, labels in valid_loader:
             inputs = inputs.to(device)
             labels = labels.to(device)
@@ -370,9 +371,9 @@ def train(model, sbert_model, clip_model, train_dataset, valid_dataset, language
         valid_losses.append(valid_avg_loss)
         if epoch % 50 == 0 or epoch == epochs-1:
             new_lr = [ group['lr'] for group in optimizer.param_groups ] 
-            print("Epoch {}. Train Loss: {}. Valid Loss: {}. LR: {}".format(epoch, train_loss/train_counter, valid_loss/valid_counter, new_lr[0]))
-        
-        wandb.log({"Loss/Valid": sbert_MRR[i]}, epoch)
+            print("Epoch {}. Train Loss: {}. Valid Loss: {}. LR: {}. Time {}".format(epoch, train_loss/train_counter, valid_loss/valid_counter, new_lr[0], datetime.now()))
+            wandb.log({"Loss/LR": new_lr[0]}, epoch )
+        wandb.log({"Loss/Valid": valid_avg_loss[i]}, epoch)
         writer.add_scalar("Loss/Valid", valid_avg_loss, epoch)
         writer.flush()        
     writer.close()
@@ -388,7 +389,9 @@ def supra_training(models, sbert_model, clip_model, train_sbert_emb,train_clip_e
         start_time = time.time()
         train_dataset = EmbeddingsDataset(train_sbert_emb, train_clip_emb)
         valid_dataset = EmbeddingsDataset(valid_sbert_emb, valid_clip_emb)
+        
         train_loss, valid_loss = train(model, sbert_model, clip_model, train_dataset, valid_dataset, languages, captions, image_features, epochs=n_epochs)
+        
         end_time = time.gmtime(time.time() - start_time)
         elapsed_time = time.strftime("%H:%M:%S", end_time)
         training_time.append(elapsed_time)
@@ -405,9 +408,6 @@ def supra_training(models, sbert_model, clip_model, train_sbert_emb,train_clip_e
         with open(os.path.join('jsons',name_to_save+'.json'), 'w', encoding='utf-8') as f:
             json.dump(data_json, f, ensure_ascii=False, indent=4)
         logger.info(f'Trained model called {name_to_save} at {str_date_time}')
-        if not os.path.exists("models"):  # TODO: this should be out of the project folder
-            print("Folder Models does not exist in current directory")
-            os.makedirs("models")
         torch.save(model.state_dict(), os.path.join('models', name_to_save))
         print('Finished Training from model {}. Elapsed time: {}.'.format(name,elapsed_time))
         # print("-"*50)
@@ -419,18 +419,21 @@ def supra_training(models, sbert_model, clip_model, train_sbert_emb,train_clip_e
 def run_pipeline(directory, n_epochs):  # Training Pipeline
     with open(os.path.join("preprocessing", "config.yml"), "r") as ymlfile:
         cfg = yaml.safe_load(ymlfile)
-    directory = cfg["coco"]["out_dir"]
+    test_directory = cfg["coco"]["out_dir"]
     image_directory = cfg["coco"]["image_dir"]
     print("Image_directory: {}".format(image_directory))
     languages = cfg["languages"]
     durations = {}
     finals = {}
+    if not os.path.exists("models"):
+        print("Folder Models does not exist in current directory")
+        os.makedirs("models")
     sbert_model, clip_model, preprocess = get_sbert_and_clip_models()
     train_clip_emb, valid_clip_emb, train_sbert_emb, valid_sbert_emb = get_train_embeddings(directory,clip_model, sbert_model)
     train_size = train_sbert_emb.size()[0]
     input_size = train_sbert_emb.size()[1]
     model_dict = get_models_to_train(input_size)
-    images, captions = get_images_and_captions(directory, languages)
+    images, captions = get_images_and_captions(test_directory, languages)
     images_features = get_image_features(images["english"], image_directory, clip_model, preprocess)
     train_losses, valid_losses, train_time, final_loss = supra_training(
         model_dict,
@@ -447,10 +450,8 @@ def run_pipeline(directory, n_epochs):  # Training Pipeline
         directory=directory,        
         n_epochs=n_epochs
     )
-    durations[directory] = train_time
-    finals[directory] = final_loss
     train_final_losses = [x[-1] for x in train_losses]
-    train_results = pd.DataFrame({"TrainLoss": train_final_losses, "ValidLoss": final_loss}, index=model_dict.keys())
+    train_results = pd.DataFrame({"TrainLoss": train_final_losses, "ValidLoss": final_loss, "TrainTime":train_time}, index=model_dict.keys())
     print(train_results)
     show_plot(model_dict, train_losses, valid_losses, directory+'_'+str(n_epochs)+'_'+str(train_size))
 

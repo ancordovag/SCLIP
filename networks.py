@@ -30,11 +30,10 @@ class SCLIPNN3(nn.Module):
         self.input_size = input_size
         self.hidden_size = hidden_size
         self.linear1 = nn.Linear(self.input_size,self.hidden_size)
-        self.linear2 = nn.Linear(self.hidden_size,self.hidden_size)
+        self.linear2 = nn.Linear(self.hidden_size,750)
+        self.linear3 = nn.Linear(750,512)
         self.leak = nn.LeakyReLU()
-        self.linear3 = nn.Linear(self.hidden_size,512)
-        self.leak = nn.LeakyReLU()
-
+        
     def forward(self, x):
         x = self.leak(self.linear1(x))
         x = self.leak(self.linear2(x))

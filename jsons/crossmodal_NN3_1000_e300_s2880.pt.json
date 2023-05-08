@@ -1,0 +1,12 @@
+{
+    "Timestamp": "27-04-2023, 19:28:10",
+    "name_model": "NN3_1000",
+    "hidden_layers": 1000,
+    "epochs": 300,
+    "train_size": 2880,
+    "train_dataset": "crossmodal",
+    "model_saved_as": "crossmodal_NN3_1000_e300_s2880.pt.pt",
+    "train_loss": 0.125,
+    "valid_loss": 0.13,
+    "elapsed_time": "00:17:06"
+}

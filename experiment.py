@@ -2,7 +2,7 @@ import numpy as np
 import json
 import torch
 import torch.nn as nn
-from networks import SCLIPNN
+from networks import SCLIPNN, SCLIPNN3
 import clip
 from PIL import Image
 from sentence_transformers import SentenceTransformer
@@ -46,12 +46,17 @@ def get_clip_embeddings(sentences, clip_model, batch_size=10):
     final_emb = torch.stack(clip_embeddings_list)
     return final_emb
 
-def load_model(path_to_model,sbert_model):
+def load_model(path_to_model, sbert_model, hidden_size=1000):
     PATH = path_to_model
     sbert_features = get_sbert_embeddings(['simple sentence'],sbert_model)
     input_size = sbert_features.shape[1]
-    model = SCLIPNN(input_size,900)
-    model.load_state_dict(torch.load(PATH))
+    if 'NN3' in path_to_model:
+        model = SCLIPNN3(input_size, hidden_size)
+        model.load_state_dict(torch.load(PATH))
+    else:
+        model = SCLIPNN(input_size, hidden_size)
+        model.load_state_dict(torch.load(PATH))
+    model.eval()
     return model
 
 def sbert_to_clip(sbert_features, name_model):
@@ -59,7 +64,10 @@ def sbert_to_clip(sbert_features, name_model):
     hidden_size = int(splitted_name[2])
     input_size = sbert_features.shape[1]
     PATH = os.path.join("models",name_model)
-    model = SCLIPNN(input_size,hidden_size)
+    if 'NN3' in name_model:
+        model = SCLIPNN3(input_size,hidden_size)
+    else:
+        model = SCLIPNN(input_size,hidden_size)
     model.load_state_dict(torch.load(PATH))
     model.eval()
     output = model(sbert_features)
@@ -123,7 +131,7 @@ def get_image_features(images, image_directory, clip_model, preprocess):
             image_features[i] = clip_image
     return image_features
 
-def get_images_and_captions(languages):
+def get_images_and_captions(directory, languages):
     images_of_language = {}
     captions_of_language = {}
     for lang, code in languages.items():        
@@ -138,8 +146,8 @@ def get_images_and_captions(languages):
         captions_of_language[lang] = captions
     return images_of_language, captions_of_language
 
-def get_image_and_captions_clip_features(languages, image_directory,clip_model, preprocess):
-    images, captions = get_images_and_captions(languages)
+def get_image_and_captions_clip_features(directory, languages, image_directory,clip_model, preprocess):
+    images, captions = get_images_and_captions(directory, languages)
     images_features = {}
     clip_features = {}
     for lang in languages.keys():
@@ -150,45 +158,65 @@ def get_image_and_captions_clip_features(languages, image_directory,clip_model, 
 #######################################
 # Additional Functions
 #######################################
-def display_results(sbert_lang_performance, clip_lang_performance, sbert_lang_errors, clip_lang_errors, sbert_lang_mrr, clip_lang_mrr):
+def get_results(sbert_lang_performance, clip_lang_performance, sbert_lang_mrr, clip_lang_mrr, sbert_lang_errors, clip_lang_errors, sbert_lang_correct, clip_lang_correct):
     results = pd.DataFrame({"SBERT":sbert_lang_performance, "CLIP": clip_lang_performance,
-                        "error SBERT":sbert_lang_errors, "error CLIP":clip_lang_errors,
-                       "MRR sbert":sbert_lang_mrr, "MRR clip": clip_lang_mrr}, 
+                            "MRR sbert":sbert_lang_mrr, "MRR clip": clip_lang_mrr,
+                        "Error SBERT":sbert_lang_errors, "Error CLIP":clip_lang_errors,
+                            "Accuracy SBERT":sbert_lang_correct, "Accuracy CLIP":clip_lang_correct
+                       }, 
                        index=languages)
-    print(results)
+    #print(results)
+    return results
 
 
 def reciprocal_rank(probs, value):
     return float(1 / (1 + np.where(-np.sort(-probs) == value)[0][0]))
 
+def reciprocal_rank_b(probs, value):
+    N = len(probs)
+    copy_probs = list(probs.copy())
+    for i in range(N):
+        max_value = max(copy_probs)
+        if max_value == value:
+            return 1/(i + 1)
+        else:
+            copy_probs.remove(max_value)
+    return 1/N
 
 
-def get_MRR(languages, model, sbert_model, clip_model, captions, images_features):
+def get_MRR(languages, model, name_of_model, sbert_model, clip_model, captions, images_features):
     sbert_lang_performance = []
     clip_lang_performance = []
     sbert_lang_errors = []
     clip_lang_errors = []
+    sbert_lang_correct = []
+    clip_lang_correct = []
     sbert_lang_mrr = []
     clip_lang_mrr = []
     vetoed = []
     for lang, code in languages.items():
-        print("Lang {}".format(lang))
+        print("Lang {}. Timestamp: {}".format(lang, datetime.now()))
         with torch.no_grad():
-        #try:
-            torch_features = get_sbert_embeddings(captions[lang],sbert_model) 
-            sbert_features = sbert_to_clip(torch_features,name_of_model).type(torch.float16)
-            print("SBERT features ready. Timestamp: {}".format(datetime.now()))
-            clip_features = get_clip_embeddings(captions[lang],clip_model).to(device)
-            print("CLIP features ready. Timestamp: {}".format(datetime.now())) 
-        # except:
-            print("Not able to tokenize in {}. Skipping language {}".format(lang, code))
-            vetoed.append(lang)
-            #continue
+            try:
+                torch_features = get_sbert_embeddings(captions[lang],sbert_model) 
+                sbert_features = sbert_to_clip(torch_features,name_of_model).type(torch.float16)
+                #print("SBERT features ready. Timestamp: {}".format(datetime.now()))
+            except:
+                print("[SBERT] Not able to extract features in {}. Skipping language {}".format(lang, code))
+            try:
+                clip_features = get_clip_embeddings(captions[lang],clip_model).to(device)
+                #print("CLIP features ready. Timestamp: {}".format(datetime.now())) 
+            except:
+                print("[CLIP] Not able to tokenize in {}. Skipping language {}".format(lang, code))
+                vetoed.append(lang)
+                #continue
 
             sbert_performance = []
             clip_performance = []
             sbert_errors = 0
             clip_errors = 0
+            sbert_correct = 0
+            clip_correct = 0
             sbert_rr = 0
             clip_rr = 0
             counter = 0
@@ -207,11 +235,15 @@ def get_MRR(languages, model, sbert_model, clip_model, captions, images_features
                 sbert_performance.append(ps)
                 if ps < max(probs_sbert):
                     sbert_errors += 1
+                elif ps == max(probs_sbert):
+                    sbert_correct +=1
                 pc = probs_clip[counter]
                 clip_rr += reciprocal_rank(probs_clip, pc)
                 clip_performance.append(pc)
                 if pc < max(probs_clip):
                     clip_errors += 1
+                elif pc == max(probs_clip):
+                    clip_correct += 1
                 counter += 1
 
         # print("Images processed: {}".format(counter))
@@ -220,13 +252,16 @@ def get_MRR(languages, model, sbert_model, clip_model, captions, images_features
         clip_lang_performance.append(round(sum(clip_performance)/counter,4))
         sbert_lang_mrr.append(round(sbert_rr/counter,3))
         clip_lang_mrr.append(round(clip_rr/counter,3))
-        sbert_lang_errors.append(sbert_errors)
-        clip_lang_errors.append(clip_errors)
+        sbert_lang_errors.append(sbert_errors/counter)
+        clip_lang_errors.append(clip_errors/counter)
+        sbert_lang_correct.append(sbert_correct/counter)
+        clip_lang_correct.append(clip_correct/counter)
+        
     
     #print("Done")
     #print("Forbidden Languages: {}".format(vetoed))
     #print("SBERT_LANG_PERFORMANCE: {}".format(sbert_lang_performance))
-    return sbert_lang_performance, clip_lang_performance, sbert_lang_mrr, clip_lang_mrr, sbert_lang_errors, clip_lang_errors
+    return sbert_lang_performance, clip_lang_performance, sbert_lang_mrr, clip_lang_mrr, sbert_lang_errors, clip_lang_errors, sbert_lang_correct, clip_lang_correct
 
 if __name__ == "__main__":
     device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -242,5 +277,5 @@ if __name__ == "__main__":
     images, captions = get_images_and_captions(languages)
     images_features = get_image_features(images["english"], image_directory, clip_model, preprocess)
     model = load_model(trained_model,sbert_model)
-    sbert_per, clip_per, sbert_MRR, clip_MRR, sbert_errors, clip_errors = get_MRR(languages,model,sbert_model,clip_model,captions, images_features)
+    sbert_per, clip_per, sbert_MRR, clip_MRR, sbert_errors, clip_errors = get_MRR(languages,model,name_of_model,sbert_model,clip_model,captions, images_features)
     display_results(sbert_per,clip_per,sbert_errors, clip_errors,sbert_MRR,clip_MRR) 

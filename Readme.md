@@ -5,7 +5,7 @@ This project mixes SBERT and CLIP to get better results out of CLIP in a multi-l
 
 ## 0. Requirements
 Install dependences from ```requirements.txt```. <br>
-Download MSCOCO dataset in the folder ```SCLIP/coco```. The annotations were gotten from [MSCOCO 2017 Annotations](http://images.cocodataset.org/annotations/annotations_trainval2017.zip) and the images from [MSCOCO 2017 Train Images](http://images.cocodataset.org/zips/train2017.zip) and [MSCOCO 2017 Validation Images](http://images.cocodataset.org/zips/val2017.zip). 
+Download MSCOCO dataset in the folder ```SCLIP/coco```. The annotations were gotten from [MSCOCO 2017 Annotations](http://images.cocodataset.org/annotations/annotations_trainval2017.zip) and the images from [MSCOCO 2017 Validation Images](http://images.cocodataset.org/zips/val2017.zip). 
 Download only the annotations of [Google Conceptual Captions](https://ai.google.com/research/ConceptualCaptions/download) (Image Labels). 
 
 Edit the path in `preprocessing/config.yaml` to point to your dataset folder (e.g. _/data/SCLIP_).

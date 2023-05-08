@@ -1,0 +1,12 @@
+{
+    "Timestamp": "27-04-2023, 20:44:17",
+    "name_model": "NN3_750",
+    "hidden_layers": 750,
+    "epochs": 300,
+    "train_size": 2880,
+    "train_dataset": "coco",
+    "model_saved_as": "coco_NN3_750_e300_s2880.pt.pt",
+    "train_loss": 0.127,
+    "valid_loss": 0.131,
+    "elapsed_time": "00:15:39"
+}

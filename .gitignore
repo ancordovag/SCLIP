@@ -6,6 +6,10 @@ europarl/
 europarl/*
 gcc/
 gcc/*
+gco/*
+gco/
+crossmodal/*
+crossmodal/
 evaluated/
 evaluated/*
 models/
